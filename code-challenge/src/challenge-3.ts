@@ -155,6 +155,13 @@ const updateBuckets = (flightUpdate: FlightUpdate): void => {
     }
 };
 
+const printBucketsToConsole = (): void => console.log(`{
+    lateArrivals: ${buckets.lateArrivals.length}
+    earlyArrivals: ${buckets.earlyArrivals.length}
+    lateDepartures: ${buckets.lateDepartures.length}
+    earlyDepartures: ${buckets.earlyDepartures.length}
+}`);
+
 getArrivals()
     .then((arrivals: ArrivalFlight[]) => buckets.arrivals = arrivals)
     .finally(() => getDepartures()
@@ -168,12 +175,7 @@ getArrivals()
 
                 switch (msg.type) {
                     case MessageType.PRINT:
-                        console.log(`\n*****\nUpdate:
-            \nlateArrivals: ${buckets.lateArrivals.length}
-            \nearlyArrivals: ${buckets.earlyArrivals.length}
-            \nlateDepartures: ${buckets.lateDepartures.length}
-            \nearlyDepartures: ${buckets.earlyDepartures.length}
-           `);
+                        printBucketsToConsole();
                         break;
 
                     case MessageType.FLIGHT_UPDATE:
