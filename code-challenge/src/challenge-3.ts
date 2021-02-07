@@ -47,12 +47,10 @@
 import { MessageType, websocketify } from './../api/ws';
 import { ArrivalFlight, ArrivalFlightUpdate } from '../api/arrivals';
 import { DepartureFlight, DepartureFlightUpdate } from '../api/departures';
-// import 'rxjs';
-
-// import { Observable } from 'rxjs';
 import WebSocket from 'ws';
+import fetch from 'node-fetch';
 
-type Flight = ArrivalFlight | DepartureFlight;
+//type Flight = ArrivalFlight | DepartureFlight;
 type FlightUpdate = ArrivalFlightUpdate | DepartureFlightUpdate;
 type WebsocketMessage =
     | {
@@ -64,20 +62,129 @@ type WebsocketMessage =
         payload: 'ArrivalTimeMap';
     };
 
-const wsClient = new WebSocket('ws://localhost:3000/flightUpdates');
-wsClient.on('message', (raw:string) => { 
-     const msg:WebsocketMessage = JSON.parse(raw);
-    switch (msg.type) {
-        case 'PRINT':
-            console.log(`TODO: payload ${msg.ArrivalTimeMap}`);
-            break;
-    
-        default:
-            console.log(msg.type);
-            break;
-    }
- });
+type Buckets = {
+    arrivals: ArrivalFlight[];
+    lateArrivals: ArrivalFlight[];
+    earlyArrivals: ArrivalFlight[];
+    departures: DepartureFlight[];
+    lateDepartures: DepartureFlight[];
+    earlyDepartures: DepartureFlight[];
+}
 
-//     ws
-// const wsClient = new WebSocket('ws://localhost:3000/flightUpdates');
-// wsClient.onmessage = msg => console.log(msg);
+const buckets: Buckets = {
+    arrivals: [],
+    lateArrivals: [],
+    earlyArrivals: [],
+    departures: [],
+    lateDepartures: [],
+    earlyDepartures: []
+};
+
+const getArrivals = (): Promise<ArrivalFlight[]> => fetch('http://localhost:3000/arrivals')
+    .then(res => res.json())
+    .then(res => res as ArrivalFlight[]);
+
+const getDepartures = (): Promise<DepartureFlight[]> => fetch('http://localhost:3000/departures')
+    .then(res => res.json())
+    .then(res => res as DepartureFlight[]);
+
+const determineIfFlightUpdateIsArrival = (flightUpdate: FlightUpdate): flightUpdate is ArrivalFlightUpdate => {
+
+    if ((flightUpdate as ArrivalFlightUpdate).landingTime)
+        return true;
+    return false;
+
+};
+
+const updateBuckets = (flightUpdate: FlightUpdate): void => {
+
+    if (determineIfFlightUpdateIsArrival(flightUpdate)) {
+
+        const flightNumberFindHandler = (af: ArrivalFlight) => af.flightNumber === flightUpdate.flightNumber;
+
+        const arrival: ArrivalFlight =
+            buckets.arrivals.find(flightNumberFindHandler);
+
+        if (arrival) {
+
+            //update arrival
+            arrival.landingTime = flightUpdate.landingTime;
+
+            // clear current
+            buckets.earlyArrivals.splice(buckets.earlyArrivals.findIndex(flightNumberFindHandler), 1);
+            buckets.lateArrivals.splice(buckets.lateArrivals.findIndex(flightNumberFindHandler), 1);
+
+            // late or early?
+            const at = new Date(arrival.arrivalTime);
+            const lt = new Date(arrival.landingTime);
+
+            if (lt < at)
+                buckets.earlyArrivals.push(arrival);
+            if (lt > at)
+                buckets.lateArrivals.push(arrival);
+
+        }
+
+    } else {
+
+        const departureFindHandler = (af: DepartureFlight) => af.flightNumber === flightUpdate.flightNumber;
+
+        const departure: DepartureFlight =
+            buckets.departures.find(departureFindHandler);
+
+        if (departure) {
+
+            // update departure
+            departure.takeOffTime = flightUpdate.takeOffTime;
+
+            // clear current
+            buckets.earlyDepartures.splice(buckets.earlyDepartures.findIndex(departureFindHandler), 1);
+            buckets.lateDepartures.splice(buckets.lateDepartures.findIndex(departureFindHandler), 1);
+
+            // late or early?
+            const dt = new Date(departure.departureTime);
+            const tt = new Date(departure.takeOffTime);
+
+            if (tt < dt)
+                buckets.earlyDepartures.push(departure);
+            if (tt > dt)
+                buckets.lateDepartures.push(departure);
+
+        }
+
+    }
+};
+
+getArrivals()
+    .then((arrivals: ArrivalFlight[]) => buckets.arrivals = arrivals)
+    .finally(() => getDepartures()
+        .then((departures: DepartureFlight[]) => buckets.departures = departures)
+        .finally(() => {
+
+            const wsClient = new WebSocket('ws://localhost:3000/flightUpdates');
+            wsClient.on('message', (raw: string) => {
+
+                const msg: WebsocketMessage = JSON.parse(raw);
+
+                switch (msg.type) {
+                    case MessageType.PRINT:
+                        console.log(`\n*****\nUpdate:
+            \nlateArrivals: ${buckets.lateArrivals.length}
+            \nearlyArrivals: ${buckets.earlyArrivals.length}
+            \nlateDepartures: ${buckets.lateDepartures.length}
+            \nearlyDepartures: ${buckets.earlyDepartures.length}
+           `);
+                        break;
+
+                    case MessageType.FLIGHT_UPDATE:
+
+                        updateBuckets(msg.payload);
+                        break;
+
+                    default:
+                        console.log(`\n!Cannot handle message: ${msg}\n`);
+                        break;
+                }
+            });
+
+        }));
