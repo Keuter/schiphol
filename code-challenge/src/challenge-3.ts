@@ -52,17 +52,15 @@ import fetch from 'node-fetch';
 
 type Flight = ArrivalFlight | DepartureFlight;
 type FlightUpdate = ArrivalFlightUpdate | DepartureFlightUpdate;
-type WebsocketMessage =
-    | {
-        type: MessageType.FLIGHT_UPDATE;
-        payload: FlightUpdate;
-    }
-    | {
-        type: MessageType.PRINT;
-        payload: 'ArrivalTimeMap';
-    };
+type WebsocketMessage = {
+    type: MessageType.FLIGHT_UPDATE;
+    payload: FlightUpdate;
+} | {
+    type: MessageType.PRINT;
+    payload: 'ArrivalTimeMap';
+};
 
-type Buckets = {
+interface Buckets {
     arrivals: ArrivalFlight[];
     lateArrivals: ArrivalFlight[];
     earlyArrivals: ArrivalFlight[];
