@@ -96,51 +96,50 @@ const determineIfFlightUpdateIsArrival = (flightUpdate: FlightUpdate): flightUpd
 
 };
 
-const clearBucket = (
-    bucket: Flight[],
-    findHandler: (value: Flight, index: number, obj: Flight[]) => unknown): void => {
-    const startIndex = bucket.findIndex(findHandler);
-    if (startIndex > -1)
-        bucket.splice(startIndex, 1);
+const clearBucket = (bucket: Flight[], flightNumber: string): void => {
+    const startIndex = bucket.findIndex((flight: Flight) => flight.flightNumber === flightNumber);
+    if (startIndex > -1) bucket.splice(startIndex, 1);
 };
 
 const updateBuckets = (flightUpdate: FlightUpdate): void => {
 
+    const findFlightHandler = (flight: Flight) => flight.flightNumber === flightUpdate.flightNumber;
+
     if (determineIfFlightUpdateIsArrival(flightUpdate)) {
 
-        const flightNumberFindHandler = (af: ArrivalFlight) => af.flightNumber === flightUpdate.flightNumber;
-
-        const arrival: ArrivalFlight =
-            buckets.arrivals.find(flightNumberFindHandler);
+        const arrival: ArrivalFlight = buckets.arrivals.find(findFlightHandler);
 
         if (arrival) {
+
+            console.log(`Arrival update: ${arrival.flightNumber} - ${flightUpdate.landingTime}`);
 
             //update arrival
             arrival.landingTime = flightUpdate.landingTime;
 
             // clear current
-            clearBucket(buckets.earlyArrivals, flightNumberFindHandler);
-            clearBucket(buckets.lateArrivals, flightNumberFindHandler);
-            // buckets.earlyArrivals.splice(buckets.earlyArrivals.findIndex(flightNumberFindHandler), 1);
-            // buckets.lateArrivals.splice(buckets.lateArrivals.findIndex(flightNumberFindHandler), 1);
+            clearBucket(buckets.earlyArrivals, flightUpdate.flightNumber);
+            clearBucket(buckets.lateArrivals, flightUpdate.flightNumber);
 
             // late or early?
             const at = new Date(arrival.arrivalTime);
             const lt = new Date(arrival.landingTime);
 
-            if (lt < at)
+            if (lt < at) {
+                // console.log(`Early arrival: ${arrival.flightNumber} - ${arrival.arrivalTime} - ${arrival.landingTime}`);
                 buckets.earlyArrivals.push(arrival);
-            if (lt > at)
+
+            }
+            if (lt > at) {
+                // console.log(`Late arrival: ${arrival.flightNumber} - ${arrival.arrivalTime} - ${arrival.landingTime}`);
                 buckets.lateArrivals.push(arrival);
+            }
+
 
         }
 
     } else {
 
-        const departureFindHandler = (af: DepartureFlight) => af.flightNumber === flightUpdate.flightNumber;
-
-        const departure: DepartureFlight =
-            buckets.departures.find(departureFindHandler);
+        const departure: DepartureFlight = buckets.departures.find(findFlightHandler);
 
         if (departure) {
 
@@ -148,20 +147,22 @@ const updateBuckets = (flightUpdate: FlightUpdate): void => {
             departure.takeOffTime = flightUpdate.takeOffTime;
 
             // clear current
-            clearBucket(buckets.earlyDepartures, departureFindHandler)
-            clearBucket(buckets.lateDepartures, departureFindHandler)
-
-            // buckets.earlyDepartures.splice(buckets.earlyDepartures.findIndex(departureFindHandler), 1);
-            // buckets.lateDepartures.splice(buckets.lateDepartures.findIndex(departureFindHandler), 1);
+            clearBucket(buckets.earlyDepartures, flightUpdate.flightNumber)
+            clearBucket(buckets.lateDepartures, flightUpdate.flightNumber)
 
             // late or early?
             const dt = new Date(departure.departureTime);
             const tt = new Date(departure.takeOffTime);
 
-            if (tt < dt)
+            if (tt < dt) {
+                // console.log(`Early departure: ${departure.flightNumber} - ${departure.departureTime} - ${departure.takeOffTime}`);
                 buckets.earlyDepartures.push(departure);
-            if (tt > dt)
+            }
+            if (tt > dt) {
+                // console.log(`Late departure: ${departure.flightNumber} - ${departure.departureTime} - ${departure.takeOffTime}`);
                 buckets.lateDepartures.push(departure);
+            }
+
 
         }
 
