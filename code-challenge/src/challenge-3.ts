@@ -98,7 +98,7 @@ const clearBucket = (bucket: Flight[], flightNumber: string): void => {
 
 const handleArrivalUpdate = (flightUpdate: ArrivalFlightUpdate) => {
 
-    const findFlightHandler = (flight: Flight) => flight.flightNumber === flightUpdate.flightNumber;
+    const findFlightHandler = (flight: ArrivalFlight) => flight.flightNumber === flightUpdate.flightNumber;
 
     const arrival: ArrivalFlight = buckets.arrivals.find(findFlightHandler);
 
@@ -124,7 +124,7 @@ const handleArrivalUpdate = (flightUpdate: ArrivalFlightUpdate) => {
 
 const handleDepartureUpdate = (flightUpdate: DepartureFlightUpdate): void => {
 
-    const findFlightHandler = (flight: Flight) => flight.flightNumber === flightUpdate.flightNumber;
+    const findFlightHandler = (flight: DepartureFlight) => flight.flightNumber === flightUpdate.flightNumber;
 
     const departure: DepartureFlight = buckets.departures.find(findFlightHandler);
 
