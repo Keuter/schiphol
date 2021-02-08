@@ -44,13 +44,13 @@
  * (Tip: the use of RxJS might be of big help but is not obligated)
  */
 
-import { MessageType, websocketify } from './../api/ws';
+import { MessageType } from './../api/ws';
 import { ArrivalFlight, ArrivalFlightUpdate } from '../api/arrivals';
 import { DepartureFlight, DepartureFlightUpdate } from '../api/departures';
 import WebSocket from 'ws';
 import fetch from 'node-fetch';
 
-//type Flight = ArrivalFlight | DepartureFlight;
+type Flight = ArrivalFlight | DepartureFlight;
 type FlightUpdate = ArrivalFlightUpdate | DepartureFlightUpdate;
 type WebsocketMessage =
     | {
@@ -96,6 +96,14 @@ const determineIfFlightUpdateIsArrival = (flightUpdate: FlightUpdate): flightUpd
 
 };
 
+const clearBucket = (
+    bucket: Flight[],
+    findHandler: (value: Flight, index: number, obj: Flight[]) => unknown): void => {
+    const startIndex = bucket.findIndex(findHandler);
+    if (startIndex > -1)
+        bucket.splice(startIndex, 1);
+};
+
 const updateBuckets = (flightUpdate: FlightUpdate): void => {
 
     if (determineIfFlightUpdateIsArrival(flightUpdate)) {
@@ -111,8 +119,10 @@ const updateBuckets = (flightUpdate: FlightUpdate): void => {
             arrival.landingTime = flightUpdate.landingTime;
 
             // clear current
-            buckets.earlyArrivals.splice(buckets.earlyArrivals.findIndex(flightNumberFindHandler), 1);
-            buckets.lateArrivals.splice(buckets.lateArrivals.findIndex(flightNumberFindHandler), 1);
+            clearBucket(buckets.earlyArrivals, flightNumberFindHandler);
+            clearBucket(buckets.lateArrivals, flightNumberFindHandler);
+            // buckets.earlyArrivals.splice(buckets.earlyArrivals.findIndex(flightNumberFindHandler), 1);
+            // buckets.lateArrivals.splice(buckets.lateArrivals.findIndex(flightNumberFindHandler), 1);
 
             // late or early?
             const at = new Date(arrival.arrivalTime);
@@ -138,8 +148,11 @@ const updateBuckets = (flightUpdate: FlightUpdate): void => {
             departure.takeOffTime = flightUpdate.takeOffTime;
 
             // clear current
-            buckets.earlyDepartures.splice(buckets.earlyDepartures.findIndex(departureFindHandler), 1);
-            buckets.lateDepartures.splice(buckets.lateDepartures.findIndex(departureFindHandler), 1);
+            clearBucket(buckets.earlyDepartures, departureFindHandler)
+            clearBucket(buckets.lateDepartures, departureFindHandler)
+
+            // buckets.earlyDepartures.splice(buckets.earlyDepartures.findIndex(departureFindHandler), 1);
+            // buckets.lateDepartures.splice(buckets.lateDepartures.findIndex(departureFindHandler), 1);
 
             // late or early?
             const dt = new Date(departure.departureTime);
