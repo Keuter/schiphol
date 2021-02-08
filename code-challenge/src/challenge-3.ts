@@ -67,7 +67,7 @@ interface Buckets {
     departures: DepartureFlight[];
     lateDepartures: DepartureFlight[];
     earlyDepartures: DepartureFlight[];
-}
+};
 
 const buckets: Buckets = {
     arrivals: [],
@@ -96,9 +96,8 @@ const clearBucket = (bucket: Flight[], flightNumber: string): void => {
 
 const handleArrivalUpdate = (flightUpdate: ArrivalFlightUpdate) => {
 
-    const findFlightHandler = (flight: ArrivalFlight) => flight.flightNumber === flightUpdate.flightNumber;
-
-    const arrival: ArrivalFlight = buckets.arrivals.find(findFlightHandler);
+    const arrival: ArrivalFlight = buckets.arrivals
+        .find((flight: ArrivalFlight) => flight.flightNumber === flightUpdate.flightNumber);
 
     if (arrival) {
 
@@ -118,13 +117,12 @@ const handleArrivalUpdate = (flightUpdate: ArrivalFlightUpdate) => {
 
     }
 
-}
+};
 
 const handleDepartureUpdate = (flightUpdate: DepartureFlightUpdate): void => {
 
-    const findFlightHandler = (flight: DepartureFlight) => flight.flightNumber === flightUpdate.flightNumber;
-
-    const departure: DepartureFlight = buckets.departures.find(findFlightHandler);
+    const departure: DepartureFlight = buckets.departures
+        .find((flight: DepartureFlight) => flight.flightNumber === flightUpdate.flightNumber);
 
     if (departure) {
 
@@ -144,7 +142,8 @@ const handleDepartureUpdate = (flightUpdate: DepartureFlightUpdate): void => {
 
     }
 
-}
+};
+
 const updateBuckets = (flightUpdate: FlightUpdate): void => {
 
     if (determineIfFlightUpdateIsArrival(flightUpdate))
@@ -180,6 +179,7 @@ const startConsumingUpdates = () => {
                 console.log(`\n!Cannot handle message: ${msg}\n`);
                 break;
         }
+
     });
 
 };
