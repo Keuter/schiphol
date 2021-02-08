@@ -88,13 +88,8 @@ const getDepartures = (): Promise<DepartureFlight[]> => fetch('http://localhost:
     .then(res => res.json())
     .then(res => res as DepartureFlight[]);
 
-const determineIfFlightUpdateIsArrival = (flightUpdate: FlightUpdate): flightUpdate is ArrivalFlightUpdate => {
-
-    if ((flightUpdate as ArrivalFlightUpdate).landingTime)
-        return true;
-    return false;
-
-};
+const determineIfFlightUpdateIsArrival = (flightUpdate: FlightUpdate): flightUpdate is ArrivalFlightUpdate =>
+    (flightUpdate as ArrivalFlightUpdate).landingTime ? true : false;
 
 const clearBucket = (bucket: Flight[], flightNumber: string): void => {
     const startIndex = bucket.findIndex((flight: Flight) => flight.flightNumber === flightNumber);
@@ -127,6 +122,7 @@ const updateBuckets = (flightUpdate: FlightUpdate): void => {
                 buckets.earlyArrivals.push(arrival);
 
             }
+
             if (lt > at) {
                 // console.log(`Late arrival: ${arrival.flightNumber} - ${arrival.arrivalTime} - ${arrival.landingTime}`);
                 buckets.lateArrivals.push(arrival);
@@ -156,11 +152,11 @@ const updateBuckets = (flightUpdate: FlightUpdate): void => {
                 // console.log(`Early departure: ${departure.flightNumber} - ${departure.departureTime} - ${departure.takeOffTime}`);
                 buckets.earlyDepartures.push(departure);
             }
+            
             if (tt > dt) {
                 // console.log(`Late departure: ${departure.flightNumber} - ${departure.departureTime} - ${departure.takeOffTime}`);
                 buckets.lateDepartures.push(departure);
             }
-
 
         }
 
@@ -174,31 +170,31 @@ const printBucketsToConsole = (): void => console.log(`{
     earlyDepartures: ${buckets.earlyDepartures.length}
 }`);
 
+const startConsumingUpdates = () => {
+
+    const wsClient = new WebSocket('ws://localhost:3000/flightUpdates');
+
+    wsClient.on('message', (raw: string) => {
+
+        const msg: WebsocketMessage = JSON.parse(raw);
+
+        switch (msg.type) {
+            case MessageType.PRINT:
+                printBucketsToConsole();
+                break;
+            case MessageType.FLIGHT_UPDATE:
+                updateBuckets(msg.payload);
+                break;
+            default:
+                console.log(`\n!Cannot handle message: ${msg}\n`);
+                break;
+        }
+    });
+
+};
+
 getArrivals()
     .then((arrivals: ArrivalFlight[]) => buckets.arrivals = arrivals)
     .finally(() => getDepartures()
         .then((departures: DepartureFlight[]) => buckets.departures = departures)
-        .finally(() => {
-
-            const wsClient = new WebSocket('ws://localhost:3000/flightUpdates');
-            wsClient.on('message', (raw: string) => {
-
-                const msg: WebsocketMessage = JSON.parse(raw);
-
-                switch (msg.type) {
-                    case MessageType.PRINT:
-                        printBucketsToConsole();
-                        break;
-
-                    case MessageType.FLIGHT_UPDATE:
-
-                        updateBuckets(msg.payload);
-                        break;
-
-                    default:
-                        console.log(`\n!Cannot handle message: ${msg}\n`);
-                        break;
-                }
-            });
-
-        }));
+        .finally(startConsumingUpdates));
