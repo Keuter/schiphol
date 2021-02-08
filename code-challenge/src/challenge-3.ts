@@ -96,71 +96,64 @@ const clearBucket = (bucket: Flight[], flightNumber: string): void => {
     if (startIndex > -1) bucket.splice(startIndex, 1);
 };
 
-const updateBuckets = (flightUpdate: FlightUpdate): void => {
+const handleArrivalUpdate = (flightUpdate: FlightUpdate) => {
 
     const findFlightHandler = (flight: Flight) => flight.flightNumber === flightUpdate.flightNumber;
 
-    if (determineIfFlightUpdateIsArrival(flightUpdate)) {
+    const arrival: ArrivalFlight = buckets.arrivals.find(findFlightHandler);
 
-        const arrival: ArrivalFlight = buckets.arrivals.find(findFlightHandler);
+    if (arrival) {
 
-        if (arrival) {
+        //update arrival
+        arrival.landingTime = (flightUpdate as ArrivalFlightUpdate).landingTime;
 
-            //update arrival
-            arrival.landingTime = flightUpdate.landingTime;
+        // clear current
+        clearBucket(buckets.earlyArrivals, flightUpdate.flightNumber);
+        clearBucket(buckets.lateArrivals, flightUpdate.flightNumber);
 
-            // clear current
-            clearBucket(buckets.earlyArrivals, flightUpdate.flightNumber);
-            clearBucket(buckets.lateArrivals, flightUpdate.flightNumber);
+        // late or early?
+        const at = new Date(arrival.arrivalTime);
+        const lt = new Date(arrival.landingTime);
 
-            // late or early?
-            const at = new Date(arrival.arrivalTime);
-            const lt = new Date(arrival.landingTime);
-
-            if (lt < at) {
-                // console.log(`Early arrival: ${arrival.flightNumber} - ${arrival.arrivalTime} - ${arrival.landingTime}`);
-                buckets.earlyArrivals.push(arrival);
-
-            }
-
-            if (lt > at) {
-                // console.log(`Late arrival: ${arrival.flightNumber} - ${arrival.arrivalTime} - ${arrival.landingTime}`);
-                buckets.lateArrivals.push(arrival);
-            }
-
-
-        }
-
-    } else {
-
-        const departure: DepartureFlight = buckets.departures.find(findFlightHandler);
-
-        if (departure) {
-
-            // update departure
-            departure.takeOffTime = flightUpdate.takeOffTime;
-
-            // clear current
-            clearBucket(buckets.earlyDepartures, flightUpdate.flightNumber)
-            clearBucket(buckets.lateDepartures, flightUpdate.flightNumber)
-
-            // late or early?
-            const dt = new Date(departure.departureTime);
-            const tt = new Date(departure.takeOffTime);
-
-            if (tt < dt) {
-                // console.log(`Early departure: ${departure.flightNumber} - ${departure.departureTime} - ${departure.takeOffTime}`);
-                buckets.earlyDepartures.push(departure);
-            }
-            
-            if (tt > dt) {
-                // console.log(`Late departure: ${departure.flightNumber} - ${departure.departureTime} - ${departure.takeOffTime}`);
-                buckets.lateDepartures.push(departure);
-            }
-
-        }
+        if (lt < at) buckets.earlyArrivals.push(arrival);
+        if (lt > at) buckets.lateArrivals.push(arrival);
 
     }
+
+}
+
+const handleDepartureUpdate = (flightUpdate: FlightUpdate): void => {
+
+    const findFlightHandler = (flight: Flight) => flight.flightNumber === flightUpdate.flightNumber;
+
+    const departure: DepartureFlight = buckets.departures.find(findFlightHandler);
+
+    if (departure) {
+
+        // update departure
+        departure.takeOffTime = (flightUpdate as DepartureFlightUpdate).takeOffTime;
+
+        // clear current
+        clearBucket(buckets.earlyDepartures, flightUpdate.flightNumber)
+        clearBucket(buckets.lateDepartures, flightUpdate.flightNumber)
+
+        // late or early?
+        const dt = new Date(departure.departureTime);
+        const tt = new Date(departure.takeOffTime);
+
+        if (tt < dt) buckets.earlyDepartures.push(departure);
+        if (tt > dt) buckets.lateDepartures.push(departure);
+
+    }
+
+}
+const updateBuckets = (flightUpdate: FlightUpdate): void => {
+
+    if (determineIfFlightUpdateIsArrival(flightUpdate))
+        handleArrivalUpdate(flightUpdate);
+    else
+        handleDepartureUpdate(flightUpdate);
+
 };
 
 const printBucketsToConsole = (): void => console.log(`{
