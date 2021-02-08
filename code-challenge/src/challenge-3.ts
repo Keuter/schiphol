@@ -96,7 +96,7 @@ const clearBucket = (bucket: Flight[], flightNumber: string): void => {
     if (startIndex > -1) bucket.splice(startIndex, 1);
 };
 
-const handleArrivalUpdate = (flightUpdate: FlightUpdate) => {
+const handleArrivalUpdate = (flightUpdate: ArrivalFlightUpdate) => {
 
     const findFlightHandler = (flight: Flight) => flight.flightNumber === flightUpdate.flightNumber;
 
@@ -105,7 +105,7 @@ const handleArrivalUpdate = (flightUpdate: FlightUpdate) => {
     if (arrival) {
 
         //update arrival
-        arrival.landingTime = (flightUpdate as ArrivalFlightUpdate).landingTime;
+        arrival.landingTime = flightUpdate.landingTime;
 
         // clear current
         clearBucket(buckets.earlyArrivals, flightUpdate.flightNumber);
@@ -122,7 +122,7 @@ const handleArrivalUpdate = (flightUpdate: FlightUpdate) => {
 
 }
 
-const handleDepartureUpdate = (flightUpdate: FlightUpdate): void => {
+const handleDepartureUpdate = (flightUpdate: DepartureFlightUpdate): void => {
 
     const findFlightHandler = (flight: Flight) => flight.flightNumber === flightUpdate.flightNumber;
 
@@ -131,7 +131,7 @@ const handleDepartureUpdate = (flightUpdate: FlightUpdate): void => {
     if (departure) {
 
         // update departure
-        departure.takeOffTime = (flightUpdate as DepartureFlightUpdate).takeOffTime;
+        departure.takeOffTime = flightUpdate.takeOffTime;
 
         // clear current
         clearBucket(buckets.earlyDepartures, flightUpdate.flightNumber)
@@ -150,9 +150,9 @@ const handleDepartureUpdate = (flightUpdate: FlightUpdate): void => {
 const updateBuckets = (flightUpdate: FlightUpdate): void => {
 
     if (determineIfFlightUpdateIsArrival(flightUpdate))
-        handleArrivalUpdate(flightUpdate);
+        handleArrivalUpdate((flightUpdate as ArrivalFlightUpdate));
     else
-        handleDepartureUpdate(flightUpdate);
+        handleDepartureUpdate((flightUpdate as DepartureFlightUpdate));
 
 };
 
