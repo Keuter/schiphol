@@ -111,8 +111,6 @@ const updateBuckets = (flightUpdate: FlightUpdate): void => {
 
         if (arrival) {
 
-            console.log(`Arrival update: ${arrival.flightNumber} - ${flightUpdate.landingTime}`);
-
             //update arrival
             arrival.landingTime = flightUpdate.landingTime;
 
